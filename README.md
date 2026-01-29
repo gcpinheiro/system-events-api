@@ -34,7 +34,7 @@ npm i -g @nestjs/cli
 ### 1️⃣ Clonar o repositório
 ```bash
 git clone <repo-url>
-cd presence-api
+cd system-events-api
 ```
 
 ---
