@@ -22,4 +22,4 @@ COPY --from=builder /app/dist ./dist
 # COPY --from=builder /app/prisma ./prisma
 # RUN npx prisma generate
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
