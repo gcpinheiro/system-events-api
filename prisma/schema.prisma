@@ -28,25 +28,32 @@ model User {
 }
 
 model Event {
-  id        String   @id @default(uuid())
-  title     String
-  startsAt DateTime
-  endsAt   DateTime
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  location        String
+  maxParticipants Int
+  targetCourse    String
+  observations    String?
 
-  sessions  EventSession[]
+  startsAt        DateTime
+  endsAt          DateTime
 
-  createdAt DateTime @default(now())
+  sessions        EventSession[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model EventSession {
-  id        String   @id @default(uuid())
-  eventId  String
-  status   SessionStatus
+  id          String        @id @default(uuid())
+  eventId     String
+  status      SessionStatus @default(LIVE)
 
-  event     Event    @relation(fields: [eventId], references: [id])
+  event       Event         @relation(fields: [eventId], references: [id])
   attendances Attendance[]
 
-  createdAt DateTime @default(now())
+  createdAt   DateTime      @default(now())
 }
 
 model Attendance {

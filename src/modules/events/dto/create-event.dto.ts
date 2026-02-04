@@ -1,0 +1,43 @@
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
+
+export class CreateEventDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(100)
+  title: string;
+
+  @IsString()
+  @MinLength(10)
+  description: string;
+
+  @IsString()
+  @MinLength(1)
+  startDate: string;
+
+  @IsString()
+  @MinLength(1)
+  endDate: string;
+
+  @IsString()
+  @MinLength(3)
+  location: string;
+
+  @IsInt()
+  @Min(1)
+  maxParticipants: number;
+
+  @IsString()
+  @MinLength(1)
+  targetCourse: string;
+
+  @IsOptional()
+  @IsString()
+  observations?: string;
+}

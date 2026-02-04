@@ -9,7 +9,14 @@ import { PersistenceModule } from './persistence/persistence.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 
 @Module({
-  imports: [AuthModule, EventsModule, AttendanceModule, MailModule, IntegrationsModule, PersistenceModule, PersistenceModule],
+  imports: [
+    AuthModule, 
+    EventsModule, 
+    AttendanceModule, 
+    MailModule, 
+    IntegrationsModule, 
+    PersistenceModule, 
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
