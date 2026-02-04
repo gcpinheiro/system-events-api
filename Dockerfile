@@ -18,8 +18,4 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
-# (opcional) Se você usa prisma:
-# COPY --from=builder /app/prisma ./prisma
-# RUN npx prisma generate
-
-CMD ["node", "dist/src/main.js"]
+CMD ["npm", "run", "start:prod"]
