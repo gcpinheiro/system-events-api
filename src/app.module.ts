@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { EventsModule } from './modules/events/events.module';
 import { PersistenceModule } from './persistence/persistence.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { UsersModule } from './modules/user/users.module';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
     AttendanceModule, 
     MailModule, 
     IntegrationsModule, 
-    PersistenceModule, 
+    PersistenceModule, UsersModule, 
   ],
   controllers: [AppController],
   providers: [AppService],
