@@ -3,7 +3,7 @@ import { PrismaService } from '../../persistence/prisma.service';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from 'generated/prisma/enums';
+import { UserRole } from '@prisma/client';
 import { CreateStudentDto } from './dto/create-student.dto';
 
 @Injectable()
