@@ -5,10 +5,6 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-
-# Prisma precisa de DATABASE_URL presente no generate (não conecta)
-RUN npx prisma generate --schema prisma/schema.prisma
-
 RUN npm run build
 
 
@@ -19,7 +15,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 
 CMD ["npm", "run", "start:prod"]
