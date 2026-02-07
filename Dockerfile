@@ -7,7 +7,6 @@ RUN npm ci
 COPY . .
 
 # Prisma precisa de DATABASE_URL presente no generate (não conecta)
-ENV DATABASE_URL=
 RUN npx prisma generate --schema prisma/schema.prisma
 
 RUN npm run build
