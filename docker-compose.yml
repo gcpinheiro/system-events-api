@@ -22,7 +22,7 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
-    command: npm run start:dev
+    command: npm run start:prod
 
   postgres:
     image: postgres:16
