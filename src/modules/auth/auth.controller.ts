@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthExchangeDto } from './dto/auth-exchange.dto';
+import { LoginAdminDto } from './dto/login-admin.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -11,8 +12,8 @@ export class AuthController {
     return this.authService.exchange(dto.token);
   }
 
-  @Post('login-admin')
-  loginAdmin(@Body() email: string, password: string){
-    return this.authService.loginAdmin(email, password);
+  @Post('admin')
+  loginAdmin(@Body() dto: LoginAdminDto){
+    return this.authService.loginAdmin(dto.email, dto.password);
   }
 }

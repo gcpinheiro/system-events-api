@@ -72,7 +72,6 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign({
       sub: admin.id,
-      studentId: admin.studentId, // no seu schema admin tem studentId também
       role: admin.role,
     });
 
@@ -80,7 +79,7 @@ export class AuthService {
       accessToken,
       user: {
         id: admin.id,
-        studentId: admin.studentId,
+        studentId: admin.studentId ?? null,
         name: admin.name,
         email: admin.email,
         role: admin.role,
