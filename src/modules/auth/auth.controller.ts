@@ -10,4 +10,9 @@ export class AuthController {
   exchange(@Body() dto: AuthExchangeDto){
     return this.authService.exchange(dto.token);
   }
+
+  @Post('login-admin')
+  loginAdmin(@Body() email: string, password: string){
+    return this.authService.loginAdmin(email, password);
+  }
 }
