@@ -19,11 +19,11 @@ export class CreateEventDto {
 
   @IsString()
   @MinLength(1)
-  startDate: string;
+  startsAt: string;
 
   @IsString()
   @MinLength(1)
-  endDate: string;
+  endsAt: string;
 
   @IsString()
   @MinLength(3)

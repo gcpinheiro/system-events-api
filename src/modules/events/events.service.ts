@@ -7,11 +7,11 @@ export class EventsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateEventDto) {
-    const startsAt = DateTime.fromISO(dto.startDate, {
+    const startsAt = DateTime.fromISO(dto.startsAt, {
       zone: 'America/Fortaleza',
     });
 
-    const endsAt = DateTime.fromISO(dto.endDate, {
+    const endsAt = DateTime.fromISO(dto.endsAt, {
       zone: 'America/Fortaleza',
     });
 
