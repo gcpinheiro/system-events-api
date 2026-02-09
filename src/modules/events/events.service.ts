@@ -20,7 +20,7 @@ export class EventsService {
     }
 
     if (endsAt <= startsAt) {
-      throw new BadRequestException('endDate deve ser maior que startDate');
+      throw new BadRequestException('endsAt deve ser maior que startsAt');
     }
 
 
