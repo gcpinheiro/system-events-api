@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -10,9 +10,13 @@ export class EventsController {
 
   @Post()
   @UseInterceptors(FileInterceptor('image'))
-  create(@Body() dto: CreateEventDto) {
-    return this.eventsService.create(dto);
+  create(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateEventDto,
+  ) {
+    return this.eventsService.create(dto, file);
   }
+
 
   @Get()
   getAll() {
@@ -26,8 +30,12 @@ export class EventsController {
 
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image'))
-  update(@Param('id') id: string, @Body() dto: UpdateEventDto) {
-    return this.eventsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UpdateEventDto,
+  ) {
+    return this.eventsService.update(id, dto, file);
   }
 
   @Delete(':id')

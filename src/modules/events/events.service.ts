@@ -1,29 +1,49 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateEventDto } from './dto/create-event.dto';
 import { PrismaService } from 'src/persistence/prisma.service';
 import { DateTime } from 'luxon';
+import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+
 @Injectable()
 export class EventsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateEventDto) {
-    const startsAt = DateTime.fromISO(dto.startsAt, {
-      zone: 'America/Fortaleza',
-    });
+  private fileToBase64(file?: Express.Multer.File): string | null {
+    if (!file) return null;
 
-    const endsAt = DateTime.fromISO(dto.endsAt, {
-      zone: 'America/Fortaleza',
-    });
-
-    if (!startsAt.isValid || !endsAt.isValid) {
-      throw new BadRequestException('Datas inválidas');
+    // validação básica: só imagem
+    if (!file.mimetype?.startsWith('image/')) {
+      throw new BadRequestException('Arquivo inválido: envie uma imagem.');
     }
+
+    // opcional: limite de tamanho (ex.: 5MB)
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      throw new BadRequestException('Imagem muito grande (máx. 5MB).');
+    }
+
+    const base64 = file.buffer.toString('base64');
+    // manter o mime no início ajuda o front (src="data:image/png;base64,...")
+    return `data:${file.mimetype};base64,${base64}`;
+  }
+
+  private parseDateOrThrow(iso: string, fieldName: 'startsAt' | 'endsAt') {
+    const dt = DateTime.fromISO(iso, { zone: 'America/Fortaleza' });
+    if (!dt.isValid) throw new BadRequestException(`${fieldName} inválido`);
+    return dt;
+  }
+
+  async create(dto: CreateEventDto, file?: Express.Multer.File) {
+    const startsAt = this.parseDateOrThrow(dto.startsAt, 'startsAt');
+    const endsAt = this.parseDateOrThrow(dto.endsAt, 'endsAt');
 
     if (endsAt <= startsAt) {
       throw new BadRequestException('endsAt deve ser maior que startsAt');
     }
 
+    // prioridade: arquivo > dto.imageBase64 > null
+    const imageFromFile = this.fileToBase64(file);
+    const imageBase64 = imageFromFile ?? dto.imageBase64 ?? null;
 
     return this.prisma.event.create({
       data: {
@@ -33,41 +53,72 @@ export class EventsService {
         maxParticipants: dto.maxParticipants,
         targetCourse: dto.targetCourse,
         observations: dto.observations ?? null,
-        imageBase64: dto.imageBase64 ?? null,
-        startsAt,
-        endsAt,
+        imageBase64,
+        startsAt: startsAt.toJSDate(),
+        endsAt: endsAt.toJSDate(),
       },
     });
   }
 
   async getAll() {
     return this.prisma.event.findMany({
-      orderBy: {
-        startsAt: 'desc',
-      },
+      orderBy: { startsAt: 'desc' },
     });
   }
 
-  async update(id: string, dto: UpdateEventDto) {
+  async update(id: string, dto: UpdateEventDto, file?: Express.Multer.File) {
     const exists = await this.prisma.event.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException('Evento não encontrado.');
+
+    // se vier arquivo, ele manda; se não vier, respeita dto.imageBase64 (inclusive null)
+    const imageFromFile = this.fileToBase64(file);
+
+    // datas: se vierem, valida com Luxon (mantém consistência)
+    const startsAt =
+      dto.startsAt !== undefined ? this.parseDateOrThrow(dto.startsAt, 'startsAt') : null;
+
+    const endsAt =
+      dto.endsAt !== undefined ? this.parseDateOrThrow(dto.endsAt, 'endsAt') : null;
+
+    // se mandar as duas no update, valida relação
+    if (startsAt && endsAt && endsAt <= startsAt) {
+      throw new BadRequestException('endsAt deve ser maior que startsAt');
+    }
+
+    // se mandar só uma, valida contra a outra existente
+    if (startsAt && !endsAt) {
+      const currentEndsAt = DateTime.fromJSDate(exists.endsAt, { zone: 'America/Fortaleza' });
+      if (currentEndsAt <= startsAt) {
+        throw new BadRequestException('endsAt deve ser maior que startsAt');
+      }
+    }
+
+    if (endsAt && !startsAt) {
+      const currentStartsAt = DateTime.fromJSDate(exists.startsAt, { zone: 'America/Fortaleza' });
+      if (endsAt <= currentStartsAt) {
+        throw new BadRequestException('endsAt deve ser maior que startsAt');
+      }
+    }
 
     return this.prisma.event.update({
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(dto.description !== undefined ? { description: dto.description } : {}),
-        ...(dto.startsAt !== undefined ? { startsAt: new Date(dto.startsAt) } : {}),
-        ...(dto.endsAt !== undefined ? { endsAt: new Date(dto.endsAt) } : {}),
         ...(dto.location !== undefined ? { location: dto.location } : {}),
-        ...(dto.maxParticipants !== undefined
-          ? { maxParticipants: dto.maxParticipants }
-          : {}),
+        ...(dto.maxParticipants !== undefined ? { maxParticipants: dto.maxParticipants } : {}),
         ...(dto.targetCourse !== undefined ? { targetCourse: dto.targetCourse } : {}),
-        ...(dto.observations !== undefined
-          ? { observations: dto.observations ?? null }
-          : {}),
-        ...(dto.imageBase64 !== undefined ? { imageBase64: dto.imageBase64 ?? null } : {}),
+        ...(dto.observations !== undefined ? { observations: dto.observations ?? null } : {}),
+
+        ...(dto.startsAt !== undefined ? { startsAt: startsAt!.toJSDate() } : {}),
+        ...(dto.endsAt !== undefined ? { endsAt: endsAt!.toJSDate() } : {}),
+
+        // prioridade: arquivo; se não tiver arquivo, respeita dto.imageBase64 (inclusive null pra remover)
+        ...(imageFromFile !== null
+          ? { imageBase64: imageFromFile }
+          : dto.imageBase64 !== undefined
+            ? { imageBase64: dto.imageBase64 ?? null }
+            : {}),
       },
     });
   }
@@ -82,7 +133,7 @@ export class EventsService {
 
   async getEvent(id: string) {
     const event = await this.prisma.event.findUnique({ where: { id } });
-    if (!event) throw new NotFoundException('Evento não encontrado.');  
+    if (!event) throw new NotFoundException('Evento não encontrado.');
     return event;
   }
 }

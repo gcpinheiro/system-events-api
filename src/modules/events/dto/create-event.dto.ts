@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsInt,
   IsOptional,
@@ -30,10 +31,13 @@ export class CreateEventDto {
   location: string;
 
   @IsInt()
+  @Transform(({ value }) => (value === '' || value === undefined ? undefined : Number(value)))
+  @IsOptional()
   @Min(1)
   maxParticipants: number;
 
   @IsString()
+  @IsOptional()
   @MinLength(1)
   targetCourse: string;
 
