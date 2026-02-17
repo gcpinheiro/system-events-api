@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@database-contest:5432/admin?schema=public
+      # DATABASE_URL: postgresql://postgres:postgres@database-contest:5432/admin?schema=public
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
     depends_on:
@@ -20,7 +20,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
+      # - .:/app
       - node_modules:/app/node_modules
     command: npm run start:prod
 

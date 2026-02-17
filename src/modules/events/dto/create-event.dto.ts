@@ -40,4 +40,8 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   observations?: string;
+
+  @IsOptional()
+  @IsString()
+  imageBase64?: string;
 }
