@@ -4,6 +4,8 @@ export type InstitutionalStudent = {
   studentId: string;
   name: string;
   email: string;
+  curso: string;
+  semestre: string;
 };
 
 @Injectable()
@@ -16,6 +18,8 @@ export class IntegrationsService {
       studentId: '202012345',
       name: 'Aluno Exemplo',
       email: 'aluno@fariasbrito.com.br',
+      curso: 'Ciências da Computação',
+      semestre: '6° semestre',
     };
   }
 }

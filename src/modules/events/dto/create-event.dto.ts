@@ -48,4 +48,7 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   imageBase64?: string;
+
+  @IsString()
+  speaker?: string;
 }

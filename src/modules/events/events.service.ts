@@ -41,6 +41,10 @@ export class EventsService {
       throw new BadRequestException('endsAt deve ser maior que startsAt');
     }
 
+    if (!dto.speaker) {
+      throw new BadRequestException('O campo speaker é obrigatório.');
+    }
+
     // prioridade: arquivo > dto.imageBase64 > null
     const imageFromFile = this.fileToBase64(file);
     const imageBase64 = imageFromFile ?? dto.imageBase64 ?? null;
@@ -56,6 +60,7 @@ export class EventsService {
         imageBase64,
         startsAt: startsAt.toJSDate(),
         endsAt: endsAt.toJSDate(),
+        speaker: dto.speaker,
       },
     });
   }

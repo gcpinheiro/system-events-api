@@ -44,6 +44,8 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        curso: student.curso,
+        semestre: student.semestre,
       }
     }
   }

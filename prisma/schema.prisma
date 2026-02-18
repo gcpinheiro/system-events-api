@@ -38,6 +38,7 @@ model Event {
   maxParticipants Int
   targetCourse    String
   observations    String?
+  speaker         String?  @default("A definir")
 
   startsAt        DateTime
   endsAt          DateTime
