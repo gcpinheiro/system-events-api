@@ -52,13 +52,16 @@ model Event {
 
 model EventSession {
   id          String        @id @default(uuid())
-  eventId     String
-  status      SessionStatus @default(LIVE)
+  eventId     String        @unique
+  status      SessionStatus @default(CLOSED)
 
   event       Event         @relation(fields: [eventId], references: [id])
   attendances Attendance[]
 
+  openedAt    DateTime?
+  closedAt    DateTime?
   createdAt   DateTime      @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Attendance {
@@ -75,7 +78,6 @@ model Attendance {
 }
 
 enum SessionStatus {
-  LIVE
-  CHECKOUT_OPEN
   CLOSED
+  CHECKOUT_OPEN
 }

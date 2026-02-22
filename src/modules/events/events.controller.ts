@@ -42,4 +42,20 @@ export class EventsController {
   remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
   }
+
+  @Post(':eventId/checkout/toggle')
+  toggleCheckout(@Param('eventId') eventId: string) {
+    return this.eventsService.toggleCheckout(eventId);
+  }
+
+  @Get(':eventId/checkout/status')
+  getCheckoutStatus(@Param('eventId') eventId: string) {
+    return this.eventsService.getCheckoutStatus(eventId);
+  }
+
+  // Opcional: QR token curto
+  @Get(':eventId/checkout/qr')
+  getCheckoutQr(@Param('eventId') eventId: string) {
+    return this.eventsService.getCheckoutQr(eventId);
+  }
 }

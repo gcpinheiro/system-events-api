@@ -3,10 +3,13 @@ import { PrismaService } from 'src/persistence/prisma.service';
 import { DateTime } from 'luxon';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
+import { randomUUID } from 'crypto';
+import { JwtService } from '@nestjs/jwt';
+import type { SignOptions } from 'jsonwebtoken';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService,) {}
 
   private fileToBase64(file?: Express.Multer.File): string | null {
     if (!file) return null;
@@ -140,5 +143,96 @@ export class EventsService {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Evento não encontrado.');
     return event;
+  }
+
+  private qrSecret() {
+    const s = process.env.QR_JWT_SECRET;
+    if (!s) throw new Error('QR_JWT_SECRET is not set');
+    return s;
+  }
+
+  async getCheckoutStatus(eventId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Event not found');
+
+    // sessão “ativa” = última criada (simples). Se quiser, pegue a mais recente não CLOSED.
+    const session = await this.prisma.eventSession.findFirst({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const status = session?.status ?? 'CLOSED';
+    const isOpen = status === 'CHECKOUT_OPEN';
+
+    return {
+      eventId,
+      sessionId: session?.id ?? null,
+      status,
+      isOpen,
+    };
+  }
+
+  async toggleCheckout(eventId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Event not found');
+
+    let session = await this.prisma.eventSession.findUnique({
+      where: { eventId },
+    });
+
+    // Se ainda não existe, cria fechada -> abre
+    if (!session) {
+      session = await this.prisma.eventSession.create({
+        data: { eventId, status: 'CHECKOUT_OPEN' },
+      });
+
+      return {
+        eventId,
+        sessionId: session.id,
+        status: session.status,
+        isOpen: true,
+      };
+    }
+
+    const nextStatus =
+      session.status === 'CHECKOUT_OPEN'
+        ? 'CLOSED'
+        : 'CHECKOUT_OPEN';
+
+    session = await this.prisma.eventSession.update({
+      where: { id: session.id },
+      data: { status: nextStatus },
+    });
+
+    return {
+      eventId,
+      sessionId: session.id,
+      status: session.status,
+      isOpen: session.status === 'CHECKOUT_OPEN',
+    };
+  }
+
+  async getCheckoutQr(eventId: string) {
+    const session = await this.prisma.eventSession.findFirst({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!session) throw new NotFoundException('No session found for this event');
+    if (session.status !== 'CHECKOUT_OPEN') {
+      throw new BadRequestException('Checkout is not open');
+    }
+
+    const jti = randomUUID();
+
+    const expiresIn: SignOptions['expiresIn'] =
+      (process.env.QR_JWT_EXPIRES_IN as SignOptions['expiresIn']) || '60s';
+
+    const token = await this.jwt.signAsync(
+      { typ: 'attendance_qr', sid: session.id, eid: eventId, jti } as Record<string, any>,
+      { secret: this.qrSecret(), expiresIn },
+    );
+
+    return { qrToken: token, sessionId: session.id };
   }
 }
