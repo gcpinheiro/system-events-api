@@ -226,7 +226,7 @@ export class EventsService {
     const jti = randomUUID();
 
     const expiresIn: SignOptions['expiresIn'] =
-      (process.env.QR_JWT_EXPIRES_IN as SignOptions['expiresIn']) || '60s';
+      (process.env.QR_JWT_EXPIRES_IN as SignOptions['expiresIn']) || '12s';
 
     const token = await this.jwt.signAsync(
       { typ: 'attendance_qr', sid: session.id, eid: eventId, jti } as Record<string, any>,
