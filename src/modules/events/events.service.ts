@@ -48,7 +48,6 @@ export class EventsService {
       throw new BadRequestException('O campo speaker é obrigatório.');
     }
 
-    // prioridade: arquivo > dto.imageBase64 > null
     const imageFromFile = this.fileToBase64(file);
     const imageBase64 = imageFromFile ?? dto.imageBase64 ?? null;
 

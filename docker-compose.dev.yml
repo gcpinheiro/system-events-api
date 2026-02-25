@@ -1,13 +1,13 @@
 services:
   api:
-    container_name: presence_api
+    container_name: presence_api_dev
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - .env.dev
     environment:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "300"
@@ -23,7 +23,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: presence_postgres
+    container_name: presence_postgres_dev
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -33,14 +33,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d presence"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d presence -h 127.0.0.1"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   redis:
     image: redis:7
-    container_name: presence_redis
+    container_name: presence_redis_dev
     ports:
       - "6379:6379"
     command: ["redis-server", "--appendonly", "yes"]
@@ -50,11 +50,11 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   pgadmin:
     image: dpage/pgadmin4:8
-    container_name: presence_pgadmin
+    container_name: presence_pgadmin_dev
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@local.dev
       PGADMIN_DEFAULT_PASSWORD: admin
