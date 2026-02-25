@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import type { SignOptions } from 'jsonwebtoken';
 
+type CheckoutStatus = 'CHECKOUT_OPEN' | 'CLOSED';
 @Injectable()
 export class EventsService {
   constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService,) {}
@@ -171,46 +172,6 @@ export class EventsService {
     };
   }
 
-  async toggleCheckout(eventId: string) {
-    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
-    if (!event) throw new NotFoundException('Event not found');
-
-    let session = await this.prisma.eventSession.findUnique({
-      where: { eventId },
-    });
-
-    // Se ainda não existe, cria fechada -> abre
-    if (!session) {
-      session = await this.prisma.eventSession.create({
-        data: { eventId, status: 'CHECKOUT_OPEN' },
-      });
-
-      return {
-        eventId,
-        sessionId: session.id,
-        status: session.status,
-        isOpen: true,
-      };
-    }
-
-    const nextStatus =
-      session.status === 'CHECKOUT_OPEN'
-        ? 'CLOSED'
-        : 'CHECKOUT_OPEN';
-
-    session = await this.prisma.eventSession.update({
-      where: { id: session.id },
-      data: { status: nextStatus },
-    });
-
-    return {
-      eventId,
-      sessionId: session.id,
-      status: session.status,
-      isOpen: session.status === 'CHECKOUT_OPEN',
-    };
-  }
-
   async getCheckoutQr(eventId: string) {
     const session = await this.prisma.eventSession.findFirst({
       where: { eventId },
@@ -233,5 +194,90 @@ export class EventsService {
     );
 
     return { qrToken: token, sessionId: session.id };
+  }
+
+  // ...
+
+  async openCheckout(eventId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Event not found');
+
+    let session = await this.prisma.eventSession.findUnique({
+      where: { eventId },
+    });
+
+    // Se não existe, cria já aberta
+    if (!session) {
+      session = await this.prisma.eventSession.create({
+        data: { eventId, status: 'CHECKOUT_OPEN' },
+      });
+
+      return {
+        eventId,
+        sessionId: session.id,
+        status: session.status,
+        isOpen: true,
+      };
+    }
+
+    // Se já está aberta, mantém (idempotente)
+    if (session.status === 'CHECKOUT_OPEN') {
+      return {
+        eventId,
+        sessionId: session.id,
+        status: session.status,
+        isOpen: true,
+      };
+    }
+
+    // Se existe e está fechada, abre
+    session = await this.prisma.eventSession.update({
+      where: { id: session.id },
+      data: { status: 'CHECKOUT_OPEN' as CheckoutStatus },
+    });
+
+    return {
+      eventId,
+      sessionId: session.id,
+      status: session.status,
+      isOpen: true,
+    };
+  }
+
+  async closeCheckout(eventId: string) {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Event not found');
+
+    const session = await this.prisma.eventSession.findUnique({
+      where: { eventId },
+    });
+
+    // Decisão de regra: fechar sem sessão existente
+    // Opção A (mais correta): não existe sessão -> não dá pra fechar
+    if (!session) {
+      throw new BadRequestException('No checkout session found for this event');
+    }
+
+    // Se já está fechada, mantém (idempotente)
+    if (session.status === 'CLOSED') {
+      return {
+        eventId,
+        sessionId: session.id,
+        status: session.status,
+        isOpen: false,
+      };
+    }
+
+    const updated = await this.prisma.eventSession.update({
+      where: { id: session.id },
+      data: { status: 'CLOSED' as CheckoutStatus },
+    });
+
+    return {
+      eventId,
+      sessionId: updated.id,
+      status: updated.status,
+      isOpen: false,
+    };
   }
 }

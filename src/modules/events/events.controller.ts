@@ -43,9 +43,14 @@ export class EventsController {
     return this.eventsService.remove(id);
   }
 
-  @Post(':eventId/checkout/toggle')
-  toggleCheckout(@Param('eventId') eventId: string) {
-    return this.eventsService.toggleCheckout(eventId);
+  @Post(':eventId/checkout/open')
+  openCheckout(@Param('eventId') eventId: string) {
+    return this.eventsService.openCheckout(eventId);
+  }
+
+  @Post(':eventId/checkout/close')
+  closeCheckout(@Param('eventId') eventId: string) {
+    return this.eventsService.closeCheckout(eventId);
   }
 
   @Get(':eventId/checkout/status')
