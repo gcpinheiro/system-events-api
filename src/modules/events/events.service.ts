@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable,Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/persistence/prisma.service';
 import { DateTime } from 'luxon';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { randomUUID } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import type { SignOptions } from 'jsonwebtoken';
+import { randomUUID, createHash } from 'crypto';
 
 type CheckoutStatus = 'CHECKOUT_OPEN' | 'CLOSED';
 @Injectable()
@@ -172,29 +172,80 @@ export class EventsService {
     };
   }
 
-  async getCheckoutQr(eventId: string) {
-    const session = await this.prisma.eventSession.findFirst({
-      where: { eventId },
-      orderBy: { createdAt: 'desc' },
-    });
+  // async getCheckoutQr(eventId: string) {
+  //   const session = await this.prisma.eventSession.findFirst({
+  //     where: { eventId },
+  //     orderBy: { createdAt: 'desc' },
+  //   });
 
-    if (!session) throw new NotFoundException('No session found for this event');
-    if (session.status !== 'CHECKOUT_OPEN') {
-      throw new BadRequestException('Checkout is not open');
-    }
+  //   if (!session) throw new NotFoundException('No session found for this event');
+  //   if (session.status !== 'CHECKOUT_OPEN') {
+  //     throw new BadRequestException('Checkout is not open');
+  //   }
 
-    const jti = randomUUID();
+  //   const jti = randomUUID();
 
-    const expiresIn: SignOptions['expiresIn'] =
-      (process.env.QR_JWT_EXPIRES_IN as SignOptions['expiresIn']) || '12s';
+  //   // const expiresIn: SignOptions['expiresIn'] =
+  //   //   (process.env.QR_JWT_EXPIRES_IN as SignOptions['expiresIn']) || '12s';
 
-    const token = await this.jwt.signAsync(
-      { typ: 'attendance_qr', sid: session.id, eid: eventId, jti } as Record<string, any>,
-      { secret: this.qrSecret(), expiresIn },
-    );
+  //   const expiresIn: SignOptions['expiresIn'] = '60s'
 
-    return { qrToken: token, sessionId: session.id };
+  //   const token = await this.jwt.signAsync(
+  //     { typ: 'attendance_qr', sid: session.id, eid: eventId, jti } as Record<string, any>,
+  //     { secret: this.qrSecret(), expiresIn },
+  //   );
+
+  //   return { qrToken: token, sessionId: session.id };
+  // }
+
+  
+
+async getCheckoutQr(eventId: string) {
+  const session = await this.prisma.eventSession.findFirst({
+    where: { eventId },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!session) {
+    throw new NotFoundException('No session found for this event');
   }
+
+  if (session.status !== 'CHECKOUT_OPEN') {
+    throw new BadRequestException('Checkout is not open');
+  }
+
+  const jti = randomUUID();
+
+  // 🔎 TTL aumentado para teste (mude depois para 12s se quiser)
+  const expiresIn: SignOptions['expiresIn'] = '1m';
+
+  const secret = this.qrSecret();
+  const secretFingerprint = createHash('sha256')
+    .update(secret)
+    .digest('hex')
+    .slice(0, 12);
+
+  const token = await this.jwt.signAsync(
+    {
+      typ: 'attendance_qr',
+      sid: session.id,
+      eid: eventId,
+      jti,
+    },
+    {
+      secret,
+      expiresIn,
+    },
+  );
+
+  Logger.debug(`[QR SIGN] secret=${secretFingerprint}`);
+  Logger.debug(`[QR SIGN] tokenPrefix=${token.slice(0, 20)}`);
+
+  return {
+    qrToken: token,
+    sessionId: session.id,
+  };
+}
 
   // ...
 
